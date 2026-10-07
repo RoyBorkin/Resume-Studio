@@ -1,0 +1,74 @@
+Résumé Studio
+https://royborkin.github.io
+
+Copyright (c) 2026 Roy Borkin. All rights reserved.
+
+
+SOURCE-AVAILABLE LICENCE
+========================
+
+This software is source-available, not open source. The source is published so
+that it can be read, inspected and used — not so that it can be taken.
+
+
+1. What you may do
+
+   a. View, read and study the source code.
+   b. Run the software for your own personal use, including making résumés for
+      yourself with it, for any purpose, including applying for paid work.
+   c. Keep a private copy for your own use, and modify that private copy for
+      your own use.
+   d. Link to it, write about it, quote short extracts of the code when
+      discussing or reviewing it.
+
+
+2. What you may not do without the prior written permission of the copyright
+   holder
+
+   a. Redistribute this software, in whole or in substantial part, modified or
+      unmodified, by any means, including publishing it in another repository
+      or hosting it as a service.
+   b. Publish derivative works, including re-skins, forks offered to others,
+      ports to other languages or frameworks, and templates extracted from it.
+   c. Sell it, or include it in anything sold, rented or offered as a paid
+      service.
+   d. Remove or obscure the copyright notices in the source, in the user
+      interface, or in this file.
+
+
+3. Your own content is yours
+
+   This licence covers the software only. It does not apply to anything you
+   write, upload or produce with it. Your résumé, your text, your photograph,
+   your saved .resume.json project files and every PDF you export are entirely
+   your own, and nothing in this licence gives the copyright holder any claim
+   over them or any right to them. The software runs in your browser and sends
+   nothing anywhere.
+
+
+4. Bundled typefaces
+
+   This software embeds typefaces from the Google Fonts collection. They are
+   licensed under the SIL Open Font License, Version 1.1, except Roboto, which
+   is licensed under the Apache License, Version 2.0. Those licences belong to
+   their respective authors, continue to govern those typefaces, and are in no
+   way restricted or altered by this licence. Nothing here grants you rights to
+   those typefaces beyond what their own licences give you, and nothing here
+   takes any away.
+
+
+5. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+   IN THE SOFTWARE.
+
+
+6. Permissions
+
+   For any use not permitted above, ask. Requests for permission should go to
+   the copyright holder via https://royborkin.github.io
