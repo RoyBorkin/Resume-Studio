@@ -26,7 +26,7 @@
 <title>Résumé Studio — A4 CV Builder</title>
 <meta name="author" content="Roy Borkin">
 <meta name="copyright" content="Copyright (c) 2026 Roy Borkin. All rights reserved.">
-<meta name="description" content="An A4 résumé builder in a single offline HTML file — 20 templates, 69 embedded fonts, QR codes and three PDF exports.">
+<meta name="description" content="An A4 résumé builder in a single offline HTML file — 21 templates, 69 embedded fonts, QR codes and three PDF exports.">
 <meta name="generator" content="Résumé Studio by Roy Borkin — https://royborkin.github.io">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1176,7 +1176,7 @@ kbd{background:#f1f3f7;border:1px solid #dfe4ec;border-bottom-width:2px;border-r
       <!-- ---- TEMPLATES ---- -->
       <div class="tabpane on" id="pane-tpl">
         <h3 class="panel-title">Choose a template</h3>
-        <p class="panel-sub">20 A4 layouts. Your content moves with you — switching template never deletes anything.</p>
+        <p class="panel-sub">21 A4 layouts. Your content moves with you — switching template never deletes anything.</p>
         <div class="tpl-grid" id="tplGrid"></div>
         <div class="divider"></div>
         <h3 class="panel-title">Layout of this template</h3>
@@ -1489,7 +1489,7 @@ kbd{background:#f1f3f7;border:1px solid #dfe4ec;border-bottom-width:2px;border-r
     <div class="modal-hd"><h3>How this works</h3><button class="btn ghost icon sm" data-close>✕</button></div>
     <div class="modal-bd">
       <h4>1 · Pick a template</h4>
-      <p><b>Borkin Classic</b> is a rebuild of your existing résumé — same centred header, contact grid, two columns, grey skill panel, language bars, portfolio QR and hobby icon strip. The other nineteen are drawn from the reference designs in your two examples folders. Switching template keeps all your content.</p>
+      <p><b>Borkin Classic</b> is a rebuild of your existing résumé — same centred header, contact grid, two columns, grey skill panel, language bars, portfolio QR and hobby icon strip. Nineteen more are drawn from the reference designs in your two examples folders, and <b>Playbook</b> is built to the rules in your résumé playbook: one plain column, conventional headings, no tables, icons or skill bars — the things screening software trips over. Switching template keeps all your content.</p>
       <h4>2 · Fill in the subjects</h4>
       <p>Every subject has its own <b>title</b> and <b>sub-title</b>, and every entry inside it has a title and sub-title too. Contact rows and portfolio rows can each carry a <b>hyperlink</b>; portfolio rows can also show a <b>QR code</b>.</p>
       <p>Every entry has its own <b>switch</b>, next to the move and delete buttons — and so does every bullet point.
@@ -3101,12 +3101,125 @@ var TEMPLATES = [
     ['r',108,244,84,2,'#a9aeb5'],['r',108,250,64,2,'#a9aeb5'],
     ['r',18,264,22,22,'#1b2a3f']
   ]}
+},
+{
+  /* Built to the rules in the résumé playbook: one column, black text, plain
+     bullets, conventional headings, no tables, icons, skill bars or colour
+     blocks — the things screening software trips over. */
+  id:'playbook', name:'Playbook', note:'One column, plain, built for screeners', badge:'ATS',
+  zones:['head','main'],
+  place:{contact:'head',about:'main',skills:'main',experience:'main',education:'main',awards:'main',
+         languages:'main',portfolio:'main',interests:'main',drives:'main',stats:'main',
+         text:'main',entries:'main'},
+  tip:'Playbook is one plain column. Order the subjects Summary → Skills → Experience → Projects → Education and keep it to one page.',
+  chrome:function(m,Z){
+    return '<div class="z z-head">'+
+      (m.head.showPhoto?photoEl(m,'pb-ph sq',''):'')+
+      nameBlock(m,'<h1 class="hd-name">'+esc(m.head.name)+'</h1>')+
+      (m.head.sub?'<div class="hd-sub">'+esc(m.head.sub)+'</div>':'')+
+      (m.head.sub2?'<div class="hd-sub pb-sub2">'+esc(m.head.sub2)+'</div>':'')+
+      (Z.head?'<div class="pb-ct">'+Z.head+'</div>':'')+'</div>'+
+    '<div class="mid"><div class="z z-main">'+Z.main+'</div></div>';
+  },
+  thumb:function(a){return [
+    ['bg','#ffffff'],
+    /* centred header: name, target title, one contact line */
+    ['r',72,22,66,10,'#111318'],['r',84,38,42,4,'#3c4248'],
+    ['r',50,50,110,2,'#8b9097'],
+    /* SUMMARY */
+    ['r',22,70,36,4,'#111318'],['r',22,78,166,1,'#111318'],
+    ['r',22,84,166,2,'#9aa0a7'],['r',22,90,166,2,'#9aa0a7'],['r',22,96,120,2,'#9aa0a7'],
+    /* SKILLS */
+    ['r',22,110,28,4,'#111318'],['r',22,118,166,1,'#111318'],
+    ['r',22,124,166,2,'#9aa0a7'],['r',22,130,140,2,'#9aa0a7'],
+    /* EXPERIENCE */
+    ['r',22,144,48,4,'#111318'],['r',22,152,166,1,'#111318'],
+    ['r',22,158,60,3,'#111318'],['r',150,158,38,3,'#3c4248'],
+    ['r',22,165,46,2,'#6b7178'],
+    ['r',28,172,160,2,'#9aa0a7'],['r',28,178,160,2,'#9aa0a7'],['r',28,184,112,2,'#9aa0a7'],
+    ['r',22,194,60,3,'#111318'],['r',150,194,38,3,'#3c4248'],
+    ['r',22,201,46,2,'#6b7178'],
+    ['r',28,208,160,2,'#9aa0a7'],['r',28,214,132,2,'#9aa0a7'],
+    /* PROJECTS */
+    ['r',22,228,40,4,'#111318'],['r',22,236,166,1,'#111318'],
+    ['r',22,242,166,2,'#9aa0a7'],['r',22,248,96,2,'#9aa0a7'],
+    /* EDUCATION */
+    ['r',22,262,44,4,'#111318'],['r',22,270,166,1,'#111318'],
+    ['r',22,276,120,2,'#9aa0a7']
+  ]}
 }
 
 ];
 var TPL = {}; TEMPLATES.forEach(function(t){TPL[t.id]=t});
 </script>
 <style>
+.t-playbook{--ff:'Public Sans',"Segoe UI",system-ui,sans-serif;--fs:9.7;--lh:1.4;
+  --ink:#1a1d21;--strong:#000000;--muted:#444a51;--line:#1a1d21;--paper:#ffffff;
+  --gap:0mm;--secgap:4.6mm;--accent:#1a1d21}
+.t-playbook .sheet{padding:13mm 15mm 14mm}
+.t-playbook .z-head{text-align:center;margin-bottom:5mm}
+.t-playbook .z-head .hd-line{justify-content:center}
+.t-playbook .pb-ph{width:calc(var(--phk,1) * 22mm);height:calc(var(--phk,1) * 22mm);
+  margin:0 auto 3mm;border-radius:var(--phr,1mm)}
+.t-playbook .hd-name{font-size:calc(var(--namek,1) * 20pt);font-weight:var(--namew,700);
+  letter-spacing:var(--namels,.005em);color:var(--st-c,var(--strong));line-height:1.1}
+.t-playbook .hd-sub{font-size:calc(var(--subk,1) * 1.02em);font-weight:var(--ss-w,600);
+  letter-spacing:.02em;color:var(--ss-c,var(--strong));margin-top:var(--subgap,1.4mm)}
+.t-playbook .pb-sub2{font-weight:400;color:var(--muted);margin-top:.8mm}
+/* one plain contact line, no icons, separated by middots */
+.t-playbook .pb-ct{margin-top:2.4mm}
+.t-playbook .pb-ct .blk{margin-bottom:0}
+.t-playbook .ct .ci{display:none}
+.t-playbook .ct-grid,.t-playbook .ct-rows{display:flex;flex-wrap:nowrap;justify-content:center;
+  column-gap:0;row-gap:1.1mm}
+.t-playbook .ct-grid.wrap,.t-playbook .ct-rows.wrap{flex-wrap:wrap}
+.t-playbook .ct-line{column-gap:0}
+.t-playbook .ct{color:var(--ink)}
+.t-playbook .ct::before{content:"·";margin:0 2.2mm;color:var(--muted)}
+.t-playbook .ct-grid .ct:first-child::before,.t-playbook .ct-rows .ct:first-child::before,
+.t-playbook .ct-line .ct:first-child::before{content:none;margin:0}
+.t-playbook .ct.lnk .cv{color:var(--ink);font-weight:400;text-decoration:underline;
+  text-decoration-thickness:.12mm;text-underline-offset:.5mm}
+/* conventional headings: caps, a rule, nothing else */
+.t-playbook .sh{border-bottom:.35mm solid var(--line);padding-bottom:1.1mm;margin-bottom:2.3mm;display:block}
+.t-playbook .st{font-size:calc(var(--st-fs,10.4pt) * var(--st-k,1));font-weight:var(--st-w,700);
+  letter-spacing:.1em;text-transform:uppercase;color:var(--st-c,var(--strong))}
+.t-playbook .ss{font-size:calc(var(--ss2-fs,.9em) * var(--ss-k,1));color:var(--ss-c,var(--muted));margin-top:.6mm}
+.t-playbook .itm{margin-bottom:2.8mm}
+.t-playbook .itm:last-child{margin-bottom:0}
+.t-playbook .it-top{align-items:baseline}
+.t-playbook .it-t{font-weight:var(--et-w,700);font-size:calc(var(--et-fs,1em) * var(--et-k,1));
+  color:var(--et-c,var(--strong))}
+.t-playbook .it-m{font-weight:600;color:var(--ss-c,var(--muted));font-size:.95em}
+.t-playbook .it-s{font-style:italic;font-weight:var(--ss-w,400);color:var(--ss-c,var(--muted))}
+.t-playbook .it-d{margin-top:.6mm}
+.t-playbook .it-b{padding-left:4.4mm;margin-top:1mm}
+.t-playbook .it-b li{margin-bottom:.9mm}
+.t-playbook .it-b li::before{width:1mm;height:1mm;border-radius:50%;background:var(--ink);top:.52em;left:-3.4mm}
+.t-playbook .sk-g{margin-bottom:1.1mm}
+.t-playbook .sk-gt{font-weight:700;color:var(--strong);display:inline}
+.t-playbook .sk-gt::after{content:":";margin-right:1.2mm}
+.t-playbook .sk-text{display:inline}
+.t-playbook .tags{gap:1.4mm}
+.t-playbook .tag{border-radius:0;border-color:var(--line);color:var(--ink)}
+/* no skill bars: a level reads as a word, not a meter */
+.t-playbook .bar,.t-playbook .dots{display:none}
+.t-playbook .lvl-row{gap:1.6mm}
+.t-playbook .lang-inline{gap:0}
+.t-playbook .lang-inline .lvl-row::before{content:"·";margin:0 2.2mm;color:var(--muted)}
+.t-playbook .lang-inline .lvl-row:first-child::before{content:none;margin:0}
+.t-playbook .pf-a{color:var(--ink);text-decoration:underline;text-decoration-thickness:.12mm;
+  text-underline-offset:.5mm}
+.t-playbook .qr{padding:0}
+.t-playbook .int-ic svg,.t-playbook .drive svg{color:var(--ink)}
+.t-playbook .stat .sv{color:var(--strong)}
+/* a panel is a colour block, which the playbook rules out: off unless the
+   author sets a fill themselves, in which case their choice still wins */
+.t-playbook .blk .box{background:var(--bx-bg,transparent);padding:var(--bx-p,0);
+  border-radius:var(--bx-r,0);border-width:var(--bx-bw,0)}
+/* one centred contact line, whatever spacing mode the subject carries */
+.t-playbook .blk .ct-grid.spread,.t-playbook .blk .ct-grid,.t-playbook .blk .ct-rows{justify-content:center}
+
 /* extras that must win over the template blocks above */
 .box{background:rgba(0,0,0,.05);border-radius:2mm;padding:3.4mm 4mm}
 .page.no-caps .st{text-transform:none}
@@ -3736,7 +3849,7 @@ function renderTemplates(){
 var ACC_DEFAULT = {borkin:'#2f6fbf',atelier:'#e8a33d',cards:'#3b5bdb',onyx:'#e03131',midnight:'#4c8dd6',
   slate:'#d99a2b',amber:'#e8a33d',executive:'#2f6fbf',aurora:'#6f7bd8',linen:'#2f4f7d',chevron:'#f0b429',bilingual:'#1a1d21',
   graphite:'#cfd3d8',summit:'#16191d',ledger:'#e8b53a',sandstone:'#c98a3c',nightshift:'#3b82f6',
-  laconique:'#17191c',marigold:'#f5c518',bluprint:'#2f4d75'};
+  laconique:'#17191c',marigold:'#f5c518',bluprint:'#2f4d75',playbook:'#1a1d21'};
 function defaultAccent(id){ return ACC_DEFAULT[id]||'#2f6fbf' }
 
 /* ============================================================
@@ -4361,7 +4474,7 @@ document.addEventListener('click', function(e){
 var CCOLS = {borkin:{head:3}, slate:{head:1}, executive:{head:1}, chevron:{head:1},
              bilingual:{side:2}, cards:{side:1}, aurora:{head:2},
              graphite:{head:3}, summit:{head:4}, ledger:{head:1}, sandstone:{head:2},
-             nightshift:{side:1}, marigold:{head:2}, bluprint:{head:1}};
+             nightshift:{side:1}, marigold:{head:2}, bluprint:{head:1}, playbook:{head:5}};
 function contactCols(tplId, zone){
   var d = {head:2, side:1, main:2, foot:4}, o = CCOLS[tplId]||{};
   return o[zone]!=null ? o[zone] : (d[zone]||1);
@@ -4384,6 +4497,7 @@ function setTemplate(id){
   autoContactCols();
   syncDesignUI(); syncGeomUI(); renderTypeRoles();
   renderTemplates(); renderSections(); saveLocal(); render();
+  if(tpl.tip) toast(tpl.tip);
 }
 
 /* ============================================================

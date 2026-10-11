@@ -3,7 +3,7 @@
 Copyright © 2026 [Roy Borkin](https://royborkin.github.io) · All rights reserved ·
 [Source-available licence](LICENSE)
 
-A résumé builder that is one HTML file. Open it in a browser and you get twenty A4 templates, a live
+A résumé builder that is one HTML file. Open it in a browser and you get twenty-one A4 templates, a live
 editor, 69 embedded fonts, an offline QR generator and three ways out to PDF. No installer, no account,
 no server, no build step — and nothing you type ever leaves your machine.
 
@@ -19,7 +19,7 @@ documentation.</sub>
 - [Why](#why)
 - [Quick start](#quick-start)
 - [Hosting it on GitHub Pages](#hosting-it-on-github-pages)
-- [The twenty templates](#the-twenty-templates)
+- [The twenty-one templates](#the-twenty-one-templates)
 - [Building a résumé](#building-a-résumé)
 - [Fonts](#fonts)
 - [The portfolio QR code](#the-portfolio-qr-code)
@@ -99,10 +99,10 @@ If you keep your own saved projects next to it, add a `.gitignore` so they stay 
 
 ---
 
-## The twenty templates
+## The twenty-one templates
 
 Content is kept separately from the layout, so switching template rearranges your résumé instead of asking
-you to retype it. Twelve of the twenty, all showing the same content:
+you to retype it. Twelve of the twenty-one, all showing the same content:
 
 ![Twelve of the twenty templates](screenshots/gallery.jpg)
 
@@ -128,6 +128,22 @@ you to retype it. Twelve of the twenty, all showing the same content:
 | Laconique | Minimal, right-aligned, airy |
 | Marigold | Colour band, colour panels, chips |
 | Bluprint | Centred masthead, circled marks |
+| **Playbook** | One column, plain, built for screeners |
+
+![Playbook — the plain one-column template](screenshots/playbook.jpg)
+
+**Playbook** is the odd one out, and deliberately so. It is built to the rules in a résumé playbook rather than
+to a visual reference: one column, black text, conventional headings (Summary, Skills, Experience, Projects,
+Education), plain bullets, and none of the things screening software trips over — no tables, no icons, no skill
+bars, no colour blocks, no photo by default. Its header is a name, a target job title and one line of contact
+details. Where the other twenty are designed for the person reading them, this one is designed for the pass
+before that. Run the same CV through a text extractor both ways and the difference is the whole point:
+
+| | a two-column template | Playbook |
+| --- | --- | --- |
+| heading order as read | skills → summary → experience → education → projects | summary → skills → experience → projects → education |
+| heading followed by its own first line | 2 of 5 | 5 of 5 |
+| contact details | split across the columns | one line, unbroken |
 
 Every template is A4, paginates on its own, and knows which of its four areas — header, side column, main
 column, footer — each kind of subject belongs in.
@@ -325,7 +341,7 @@ One HTML file, hand-written, no framework and no runtime dependencies. Inside it
 ## What has been tested
 
 The behaviour in this README is checked by fourteen Playwright suites — 308 assertions covering layout
-across all 20 templates, contact fitting, pagination, fonts, per-element visibility, the keyword tool, the
+across all 21 templates, contact fitting, pagination, fonts, per-element visibility, the keyword tool, the
 QR code and all three export paths.
 
 Some of it is verified outside the browser as well: exported PDFs are rendered at 300 dpi and the QR codes
