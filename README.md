@@ -237,7 +237,7 @@ sentences pass both the software and the person.
 | --- | --- | --- |
 | **Export PDF** | The designed page through the browser's own print engine. Real selectable text, embedded fonts, live hyperlinks. | The version you send or attach. The best one for anything that will be read or parsed. |
 | **Plain PDF** | The same content as one ordinary column with plain headings, no icons or panels. | Uploading where a site offers to "autofill from your CV". |
-| **Download PDF** | A picture of the page, saved immediately with no print dialog. Links are laid back over the image and stay clickable, but the text is no longer selectable. | A quick share when you just want the file. |
+| **Download PDF** | Saved immediately with no print dialog: an exact picture of the page with a layer of real text laid precisely over it, so it can be selected, copied, searched and read by screening software. Links stay clickable. | A quick share when you just want the file. |
 
 The same résumé, both ways — the designed page on the left, the plain version on the right:
 
@@ -309,8 +309,9 @@ session.
 
 Everything happens in your browser. There is no server, no account, no analytics and no network request —
 the fonts, the icons and the QR encoder are all inside the file. Your résumé, your photo and your saved
-projects stay on your own disk. The one exception is **Download PDF**, which fetches two rendering
-libraries from a CDN the first time you use it; if you are offline it says so and points you at Export PDF.
+projects stay on your own disk. The one exception is **Download PDF**, which fetches one rendering
+library (html2canvas) from a CDN the first time you use it — the PDF itself is written by the app, in your
+browser. If you are offline it says so and points you at Export PDF.
 
 ---
 
@@ -368,6 +369,9 @@ The bundled typefaces come from the [Google Fonts](https://fonts.google.com) col
 [SIL Open Font License 1.1](https://openfontlicense.org), except Roboto, which is Apache 2.0. Those licences
 belong to their authors, continue to govern those fonts, and are neither restricted nor altered by the
 terms above.
+
+**Download PDF** loads [html2canvas](https://html2canvas.hertzen.com) (MIT licence, © Niklas von Hertzen)
+from cdnjs when you first press it, to draw the page; it is not part of this repository.
 
 ---
 

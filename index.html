@@ -1143,7 +1143,7 @@ kbd{background:#f1f3f7;border:1px solid #dfe4ec;border-bottom-width:2px;border-r
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
       Save project</button>
     <span class="tb-spring"></span>
-    <button class="btn" id="btnDownload" title="Download a PDF straight away (no print dialog)">
+    <button class="btn" id="btnDownload" title="Download a PDF straight away (no print dialog) — text selectable, links clickable">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg>
       Download PDF</button>
     <button class="btn" id="btnAts" title="A plain one-column PDF for job sites that read your CV and fill in their form">
@@ -1524,10 +1524,12 @@ kbd{background:#f1f3f7;border:1px solid #dfe4ec;border-bottom-width:2px;border-r
           why the boxes come back half filled. This prints the same content as one ordinary column, with plain
           headings and no icons or panels. Nothing is hidden and nothing is added; it is your résumé, laid out for a
           machine. Send the designed one to the person.</li>
-        <li><b>Download PDF</b> saves a file immediately with no dialog. The page becomes a picture, so the text is no
-          longer selectable or searchable — but every link, including the portfolio QR, is laid back over it and stays
-          clickable. Handy for a quick share; for an application, prefer Export PDF, which keeps real text for the
-          screening software to read.</li>
+        <li><b>Download PDF</b> saves a file immediately with no dialog. It is an exact picture of the page with a
+          layer of real text laid precisely over it — the same words, in the same places — so you can select, copy and
+          search it, and screening software can read it. Every link, including the portfolio QR, stays clickable.
+          Export PDF is still the first choice for applications: its text is set in your actual fonts and the file is
+          smaller. (Printing to <i>Microsoft Print to PDF</i>, or ticking <i>Print as image</i>, turns any page into a
+          picture — choose <i>Save as PDF</i>.)</li>
       </ul>
       <h4>6 · Come back later</h4>
       <p><b>Save project</b> downloads a <code>.resume.json</code> file holding everything, photo included. <b>Open</b> loads it back. Your work is also kept in this browser automatically, so reopening this page restores your last session.</p>
@@ -5581,54 +5583,331 @@ function pdfLinks(pageEl){
   });
   return out;
 }
-var PDF_LIBS = false;
+/* ------------------------------------------------------------------
+   THE TEXT LAYER
+   "Download PDF" pictures the page, and a picture has no words in it:
+   nothing can select, copy, search or screen it. So every character is
+   read off the live page — the same letters, in the same places, at the
+   same size — and written into the PDF over the picture as real text
+   that is not painted a second time. It is how a scanned document is
+   made searchable. Nothing the page does not show is added, and nothing
+   it shows is left out.
+   ------------------------------------------------------------------ */
+var PDF_PW = 595.2756, PDF_PH = 841.8898;          /* A4 in points */
+function pdfTextRuns(pageEl){
+  var out = [], pr = pageEl.getBoundingClientRect();
+  if(!pr.width || !pr.height) return out;
+  var kx = PDF_PW / pr.width, ky = PDF_PH / pr.height;   /* screen px -> PDF points */
+  var clips = new Map(), MARK = /\p{M}/u;
+  /* the part of the page an element can actually show: what an ancestor hides is not text anyone sees */
+  function clipOf(el){
+    if(!el || el === pageEl || !pageEl.contains(el)) return {l:pr.left, t:pr.top, r:pr.right, b:pr.bottom};
+    if(clips.has(el)) return clips.get(el);
+    var c = clipOf(el.parentElement), cs = getComputedStyle(el);
+    if(cs.overflowX !== 'visible' || cs.overflowY !== 'visible'){
+      var b = el.getBoundingClientRect();
+      c = {l:Math.max(c.l,b.left), t:Math.max(c.t,b.top), r:Math.min(c.r,b.right), b:Math.min(c.b,b.bottom)};
+    }
+    clips.set(el, c); return c;
+  }
+  function cased(ch, tt, wordStart){
+    if(tt === 'uppercase' || (tt === 'capitalize' && wordStart)) return ch.toUpperCase();
+    if(tt === 'lowercase') return ch.toLowerCase();
+    return ch;
+  }
+  var walk = document.createTreeWalker(pageEl, NodeFilter.SHOW_TEXT, { acceptNode: function(n){
+    if(!n.nodeValue) return NodeFilter.FILTER_REJECT;
+    var p = n.parentElement;
+    if(!p || p.closest('svg,script,style')) return NodeFilter.FILTER_REJECT;
+    var cs = getComputedStyle(p);
+    if(cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;
+  }});
+  var rng = document.createRange(), node;
+  while((node = walk.nextNode())){
+    var el = node.parentElement, cs = getComputedStyle(el), clip = clipOf(el), txt = node.nodeValue;
+    /* vertical labels (the QR's "Portfolio") are one rotated line */
+    if(/^vertical/.test(cs.writingMode)){
+      if(!txt.trim()) continue;
+      rng.selectNodeContents(node);
+      var vb = rng.getBoundingClientRect();
+      var vs = Array.from(txt.replace(/\s+/g,' ').trim()).map(function(c, k, a){ return cased(c, cs.textTransform, !k || a[k-1] === ' ') });
+      if(vb.width && vb.height && vs.length){
+        var up = /^matrix\(-1, 0, 0, -1/.test(cs.transform);          /* turned 180°: reads bottom to top */
+        var fsV = vb.width*kx, step = vb.height*ky / vs.length;
+        out.push({ rot: up ? 90 : -90, fs: fsV,
+                   x: (vb.left - pr.left + vb.width*(up ? 0.8 : 0.2))*kx,
+                   y: PDF_PH - ((up ? vb.bottom : vb.top) - pr.top)*ky,
+                   items: vs.map(function(c, k){ return {ch:c, off:k*step, w:step} }) });
+      }
+      continue;
+    }
+    var run = null, wordStart = true;
+    var flush = function(wrapped){
+      if(run){
+        if(wrapped) while(run.items.length && run.items[run.items.length-1].ch === ' ') run.items.pop();
+        if(run.items.length){
+          var h = run.b - run.t;
+          run.items.sort(function(a, b){ return a.l - b.l });         /* the order you see them in, as PDFs store it */
+          var x0 = run.items[0].l;
+          out.push({ rot:0, fs: h*ky,
+                     x: (x0 - pr.left)*kx,
+                     y: PDF_PH - (run.t - pr.top + h*0.8)*ky,          /* alphabetic baseline */
+                     items: run.items.map(function(it){ return {ch:it.ch, off:(it.l - x0)*kx, w:(it.r - it.l)*kx} }) });
+        }
+      }
+      run = null;
+    };
+    for(var i = 0; i < txt.length; ){
+      var cp = txt.codePointAt(i), n = cp > 0xFFFF ? 2 : 1, ch = txt.substr(i, n);
+      var ws = /\s/.test(ch);
+      if(MARK.test(ch)){                                              /* vowel points and accents ride on their letter */
+        if(run && run.items.length) run.items[run.items.length-1].ch += ch;
+        i += n; continue;
+      }
+      rng.setStart(node, i); rng.setEnd(node, i + n);
+      var r = rng.getClientRects()[0];
+      i += n;
+      if(!r || r.width < 0.01){ if(ws) wordStart = true; continue }   /* collapsed space, zero-width mark */
+      var cx = r.left + r.width/2, cy = r.top + r.height/2;
+      if(cx < clip.l - .5 || cx > clip.r + .5 || cy < clip.t - .5 || cy > clip.b + .5){ wordStart = ws; continue }
+      /* a new printed line starts wherever the browser wrapped */
+      if(run && Math.abs(cy - (run.t + run.b)/2) > (run.b - run.t)*0.5) flush(true);
+      if(!run){
+        if(ws){ wordStart = true; continue }                          /* a line never starts with a space */
+        run = {items:[], t:r.top, b:r.bottom};
+      }
+      run.items.push({ch: ws ? ' ' : cased(ch, cs.textTransform, wordStart), l:r.left, r:r.right});
+      run.t = Math.min(run.t, r.top); run.b = Math.max(run.b, r.bottom);
+      wordStart = ws;
+    }
+    flush(false);
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------
+   A small PDF writer, so the quick download needs no outside library.
+   Each page: the picture, full bleed; then the text layer in text
+   render mode 3 (placed and selectable, never painted), in fonts whose
+   glyphs are empty boxes with the true width of each letter as it is
+   printed, and whose ToUnicode maps say exactly which character each
+   code stands for — so every script, Hebrew included, copies out right.
+   Every letter sits where the picture shows it, so a selection covers
+   the words you see. Links go back on top as ordinary link annotations.
+   ------------------------------------------------------------------ */
+async function makeSearchablePdf(pages, info){
+  var te = new TextEncoder();
+  function num(v){ v = Math.round(v*1000)/1000; return (v === 0 ? 0 : v).toString() }
+  function hex2(n){ return (n < 16 ? '0' : '') + n.toString(16).toUpperCase() }
+  function u16(str){ var h = ''; for(var i=0;i<str.length;i++) h += ('000'+str.charCodeAt(i).toString(16).toUpperCase()).slice(-4); return h }
+  function textStr(str){ return '<FEFF' + u16(String(str)) + '>' }
+  function uriStr(str){
+    str = String(str).replace(/[^\x21-\x7E]/g, function(c){ return encodeURIComponent(c) });
+    return '(' + str.replace(/[\\()]/g, '\\$&') + ')';
+  }
+  async function deflate(bytes){
+    if(typeof CompressionStream === 'undefined') return null;
+    try{
+      var st = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+      return new Uint8Array(await new Response(st).arrayBuffer());
+    }catch(e){ return null }
+  }
+
+  /* one code per (character, printed width), 256 codes to a font. A line never
+     changes font halfway: readers take a change of font as the end of a word */
+  var fonts = [], glyphW = new Map();
+  function newFont(){
+    /* code 0 is never shown: an "m" of ordinary width, which text readers that size
+       a Type 3 font by its m (Poppler, for one) take as a sign of a normal font */
+    var f = {list:[{ch:'', w:600, name:'m'}], map:new Map()};
+    fonts.push(f); glyphW.set(600, 0); return fonts.length-1;
+  }
+  function fontFor(keys){
+    for(var fi = fonts.length-1; fi >= 0 && fi >= fonts.length-3; fi--){
+      var f = fonts[fi], miss = new Set();
+      keys.forEach(function(k){ if(!f.map.has(k)) miss.add(k) });
+      if(f.list.length + miss.size <= 256) return fi;
+    }
+    return newFont();
+  }
+  function codeIn(fi, ch, wu){
+    var f = fonts[fi], key = ch + '\u0000' + wu, c = f.map.get(key);
+    if(c === undefined){ c = f.list.length; f.list.push({ch: ch, w: wu}); f.map.set(key, c); glyphW.set(wu, 0) }
+    return c;
+  }
+
+  /* content streams first, so we know which fonts and glyph widths exist */
+  var lines = 0;
+  var contents = pages.map(function(pg){
+    var ops = ['q', num(PDF_PW)+' 0 0 '+num(PDF_PH)+' 0 0 cm', '/Im0 Do', 'Q', 'BT', '3 Tr'];
+    function emit(t, items){
+      var fs = t.fs, dir = t.rot === 90 ? [0,1] : t.rot === -90 ? [0,-1] : [1,0];
+      var keys = items.map(function(it){
+        it.wu = Math.max(0, Math.min(4000, Math.round(it.w / fs * 200) * 5));     /* 1000ths of the size, to the nearest 5 */
+        return it.ch + '\u0000' + it.wu;
+      });
+      if(new Set(keys).size > 255){                                             /* only a freak line: halve it */
+        var h = items.length >> 1; emit(t, items.slice(0, h)); emit(t, items.slice(h)); return;
+      }
+      var fi = fontFor(keys), o = items[0].off, arr = [], hex = '', pen = o;
+      ops.push((t.rot === 90 ? '0 1 -1 0 ' : t.rot === -90 ? '0 -1 1 0 ' : '1 0 0 1 ') +
+               num(t.x + dir[0]*o)+' '+num(t.y + dir[1]*o)+' Tm', '/F'+fi+' '+num(fs)+' Tf');
+      items.forEach(function(it){
+        var adj = Math.round(-(it.off - pen) * 1000 / fs);                     /* move to where the letter is */
+        if(adj){ if(hex){ arr.push('<'+hex+'>'); hex = '' } arr.push(adj); pen -= adj * fs / 1000 }
+        hex += hex2(codeIn(fi, it.ch, it.wu));
+        pen += it.wu * fs / 1000;
+      });
+      if(hex) arr.push('<'+hex+'>');
+      ops.push('['+arr.join(' ')+'] TJ');
+    }
+    pg.runs.forEach(function(t){
+      if(!t.items.length || !(t.fs > 1) || !(t.fs < 400)) return;
+      emit(t, t.items); lines++;
+    });
+    ops.push('ET');
+    return ops.join('\n') + '\n';
+  });
+
+  /* object numbers */
+  var id = 0, ids = {catalog:++id, pages:++id, info:++id};
+  glyphW.forEach(function(v, wu){ glyphW.set(wu, ++id) });
+  var fontIds = fonts.map(function(){ return {font:++id, cmap:++id, desc:++id} });
+  var pageIds = pages.map(function(pg){
+    return {page:++id, content:++id, image:++id, annots: pg.links.map(function(){ return ++id })};
+  });
+  var objs = [];
+
+  objs.push([ids.catalog, '<< /Type /Catalog /Pages '+ids.pages+' 0 R /ViewerPreferences << /DisplayDocTitle true >> >>']);
+  objs.push([ids.pages, '<< /Type /Pages /Count '+pages.length+' /Kids ['+
+              pageIds.map(function(p){ return p.page+' 0 R' }).join(' ')+'] >>']);
+  var now = new Date(), pad = function(n){ return (n<10?'0':'')+n };
+  var stamp = 'D:'+now.getUTCFullYear()+pad(now.getUTCMonth()+1)+pad(now.getUTCDate())+
+              pad(now.getUTCHours())+pad(now.getUTCMinutes())+pad(now.getUTCSeconds())+'Z';
+  objs.push([ids.info, '<< /Title '+textStr(info.title||'')+' /Author '+textStr(info.author||'')+
+              ' /Subject '+textStr(info.subject||'')+' /Creator '+textStr(info.creator||'')+
+              ' /Producer '+textStr(info.creator||'')+' /CreationDate ('+stamp+') /ModDate ('+stamp+') >>']);
+  glyphW.forEach(function(oid, wu){                                   /* an empty glyph, wu wide */
+    objs.push([oid, {dict:'<<', data: te.encode(wu+' 0 0 -200 '+wu+' 800 d1\n')}]);
+  });
+
+  fonts.forEach(function(f, fi){
+    var names = [], widths = [], procs = {}, bf = [], maxW = 0;
+    f.list.forEach(function(g, code){
+      var nm = g.name || 'w'+g.w;
+      names.push('/'+nm); widths.push(g.w); procs[nm] = glyphW.get(g.w); maxW = Math.max(maxW, g.w);
+      if(g.ch) bf.push('<'+hex2(code)+'> <'+u16(g.ch)+'>');
+    });
+    /* every code gets a name and a width, used or not: a reader must never fall back to a standard encoding */
+    for(var u = f.list.length; u < 256; u++){ names.push('/m'); widths.push(600) }
+    var cmap = '/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n'+
+      '/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n'+
+      '/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<00> <FF>\nendcodespacerange\n';
+    for(var c=0;c<bf.length;c+=100){
+      var chunk = bf.slice(c, c+100);
+      cmap += chunk.length+' beginbfchar\n'+chunk.join('\n')+'\nendbfchar\n';
+    }
+    cmap += 'endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n';
+    objs.push([fontIds[fi].font, '<< /Type /Font /Subtype /Type3 /Name /F'+fi+
+      ' /FontBBox [0 -200 '+Math.max(1000, maxW)+' 800] /FontMatrix [0.001 0 0 0.001 0 0]'+
+      ' /CharProcs << '+Object.keys(procs).map(function(nm){ return '/'+nm+' '+procs[nm]+' 0 R' }).join(' ')+' >>'+
+      ' /Encoding << /Type /Encoding /Differences [0 '+names.join(' ')+'] >>'+
+      ' /FirstChar 0 /LastChar 255 /Widths ['+widths.join(' ')+'] /Resources << >>'+
+      ' /ToUnicode '+fontIds[fi].cmap+' 0 R /FontDescriptor '+fontIds[fi].desc+' 0 R >>']);
+    objs.push([fontIds[fi].cmap, {dict:'<<', data: te.encode(cmap)}]);
+    /* the box each line sits in: 0.8 of the size above the baseline, 0.2 below — the size is the printed line box */
+    objs.push([fontIds[fi].desc, '<< /Type /FontDescriptor /FontName /F'+fi+' /Flags 4 /FontBBox [0 -200 '+Math.max(1000, maxW)+' 800]'+
+      ' /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 0 >>']);
+  });
+
+  var fontRes = fonts.length ? ' /Font << ' + fonts.map(function(f, fi){ return '/F'+fi+' '+fontIds[fi].font+' 0 R' }).join(' ') + ' >>' : '';
+  for(var pi=0; pi<pages.length; pi++){
+    var pg = pages[pi], P = pageIds[pi];
+    objs.push([P.page, '<< /Type /Page /Parent '+ids.pages+' 0 R /MediaBox [0 0 '+num(PDF_PW)+' '+num(PDF_PH)+']'+
+      ' /Resources << /XObject << /Im0 '+P.image+' 0 R >>'+fontRes+' /ProcSet [/PDF /Text /ImageC] >>'+
+      ' /Contents '+P.content+' 0 R'+
+      (P.annots.length ? ' /Annots ['+P.annots.map(function(a){ return a+' 0 R' }).join(' ')+']' : '')+' >>']);
+    var raw = te.encode(contents[pi]), z = await deflate(raw);
+    objs.push([P.content, {dict:'<<'+(z ? ' /Filter /FlateDecode' : ''), data: z || raw}]);
+    objs.push([P.image, {dict:'<< /Type /XObject /Subtype /Image /Width '+pg.iw+' /Height '+pg.ih+
+      ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode', data: pg.jpeg}]);
+    pg.links.forEach(function(L, li){
+      var mm = 72/25.4, x0 = L.x*mm, x1 = (L.x+L.w)*mm, y1 = PDF_PH - L.y*mm, y0 = PDF_PH - (L.y+L.h)*mm;
+      objs.push([P.annots[li], '<< /Type /Annot /Subtype /Link /Rect ['+num(x0)+' '+num(y0)+' '+num(x1)+' '+num(y1)+']'+
+        ' /Border [0 0 0] /A << /S /URI /URI '+uriStr(L.url)+' >> >>']);
+    });
+  }
+
+  /* serialise, with the byte offsets the cross-reference table needs */
+  objs.sort(function(a,b){ return a[0]-b[0] });
+  var chunks = [], pos = 0, offs = [];
+  function put(x){ var b = typeof x === 'string' ? te.encode(x) : x; chunks.push(b); pos += b.length }
+  put(new Uint8Array([0x25,0x50,0x44,0x46,0x2D,0x31,0x2E,0x37,0x0A,0x25,0xE2,0xE3,0xCF,0xD3,0x0A]));   /* %PDF-1.7, binary marker */
+  objs.forEach(function(o){
+    offs[o[0]] = pos;
+    put(o[0]+' 0 obj\n');
+    if(typeof o[1] === 'string') put(o[1]+'\n');
+    else{ put(o[1].dict+' /Length '+o[1].data.length+' >>\nstream\n'); put(o[1].data); put('\nendstream\n') }
+    put('endobj\n');
+  });
+  var xref = pos, rnd = '';
+  for(var r=0;r<16;r++) rnd += hex2(Math.floor(Math.random()*256));
+  var tbl = 'xref\n0 '+(id+1)+'\n0000000000 65535 f \n';
+  for(var n=1;n<=id;n++) tbl += ('000000000'+offs[n]).slice(-10)+' 00000 n \n';
+  put(tbl+'trailer\n<< /Size '+(id+1)+' /Root '+ids.catalog+' 0 R /Info '+ids.info+' 0 R /ID [<'+rnd+'> <'+rnd+'>] >>\n'+
+      'startxref\n'+xref+'\n%%EOF\n');
+  var all = new Uint8Array(pos), at = 0;
+  chunks.forEach(function(c){ all.set(c, at); at += c.length });
+  all.lines = lines;
+  return all;
+}
+function canvasJpeg(cv, q){
+  return new Promise(function(res, rej){
+    cv.toBlob(function(b){
+      if(!b) return rej(new Error('canvas'));
+      b.arrayBuffer().then(function(ab){ res(new Uint8Array(ab)) }, rej);
+    }, 'image/jpeg', q);
+  });
+}
+
 $('#btnDownload').addEventListener('click', async function(){
-  var btn = this, old = btn.innerHTML, swaps = null;
+  var btn = this, old = btn.innerHTML, swaps = null, done = false;
+  var z = ZOOM, fit = ZOOM_FIT;
+  function guides(show){ $$('#pages .pgguide,#pages .pagenum,#pages .overflow-warn').forEach(function(e){ e.style.display = show ? '' : 'none' }) }
+  function putBack(){ if(done) return; done = true; rasterRestore(swaps); swaps = null; guides(true) }
   btn.disabled = true; btn.textContent = 'Preparing…';
   try{
-    if(!PDF_LIBS){
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-      PDF_LIBS = true;
-    }
-    var z = ZOOM, fit = ZOOM_FIT;
+    if(!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
     $('#pages').style.transform=''; $('#pages').style.marginBottom='';
-    $$('#pages .pgguide,#pages .pagenum,#pages .overflow-warn').forEach(function(e){ e.style.display='none' });
+    guides(false);
     await new Promise(function(r){ setTimeout(r, 60) });
-    swaps = await rasterPrep($('#pages'));
-    var jsPDFctor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-    var pdf = new jsPDFctor({unit:'mm', format:'a4', orientation:'portrait', compress:true});
-    /* Author is whoever the résumé belongs to; Creator is the program that drew it */
-    try{
-      pdf.setProperties({
-        title:   (MODEL.head.name ? MODEL.head.name + ' — ' : '') + 'Résumé',
-        author:  MODEL.head.name || '',
-        subject: MODEL.head.sub || '',
-        creator: APP_NAME + ' ' + APP_VERSION + ' (' + APP_URL + ')'
-      });
-    }catch(e){}
     var pages = $$('#pages .page');
+    /* words and links are read off the live page first, exactly as it is laid out */
+    var layer = pages.map(function(pg){ return {runs: pdfTextRuns(pg), links: pdfLinks(pg)} });
+    swaps = await rasterPrep($('#pages'));
+    var out = [];
     for(var i=0;i<pages.length;i++){
       btn.textContent = 'Rendering '+(i+1)+'/'+pages.length+'…';
-      var cv = await html2canvas(pages[i], {scale:3, useCORS:true, backgroundColor:null, logging:false,
+      var cv = await html2canvas(pages[i], {scale:3, useCORS:true, backgroundColor:'#ffffff', logging:false,
         windowWidth: pages[i].scrollWidth, windowHeight: pages[i].scrollHeight});
-      var img = cv.toDataURL('image/jpeg', 0.94);
-      if(i) pdf.addPage('a4','portrait');
-      pdf.addImage(img, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-      /* the picture carries no links of its own — put them back on top */
-      try{
-        pdfLinks(pages[i]).forEach(function(L){ pdf.link(L.x, L.y, L.w, L.h, {url:L.url}) });
-      }catch(e){}
+      out.push({jpeg: await canvasJpeg(cv, 0.92), iw: cv.width, ih: cv.height,
+                runs: layer[i].runs, links: layer[i].links});
     }
-    pdf.save(fileStem()+'.pdf');
-    rasterRestore(swaps); swaps = null;
-    $$('#pages .pgguide,#pages .pagenum,#pages .overflow-warn').forEach(function(e){ e.style.display='' });
-    ZOOM_FIT=fit; setZoom(z||1, true);
-    toast('PDF downloaded');
+    putBack();
+    btn.textContent = 'Writing…';
+    var bytes = await makeSearchablePdf(out, {
+      title:   (MODEL.head.name ? MODEL.head.name + ' — ' : '') + 'Résumé',
+      author:  MODEL.head.name || '',
+      subject: MODEL.head.sub || '',
+      creator: APP_NAME + ' ' + APP_VERSION + ' (' + APP_URL + ')'
+    });
+    download(fileStem()+'.pdf', new Blob([bytes], {type:'application/pdf'}));
+    ZOOM_FIT = fit; setZoom(z||1, true);
+    toast(bytes.lines ? 'PDF downloaded — every word in it can be selected, copied and searched'
+                     : 'PDF downloaded');
   }catch(err){
-    rasterRestore(swaps);
-    $$('#pages .pgguide,#pages .pagenum,#pages .overflow-warn').forEach(function(e){ e.style.display='' });
-    render();
+    putBack(); render();
     toast('Could not build the PDF here — use Export PDF and choose “Save as PDF”');
   }
   btn.disabled = false; btn.innerHTML = old;
